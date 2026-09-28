@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Ascension TMA - RPG Telegram Mini App</title>
+
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'tg-bg': 'var(--tg-theme-bg-color, #0b0e14)',
+                        'tg-card': 'var(--tg-theme-secondary-bg-color, #131822)',
+                        'tg-text': 'var(--tg-theme-text-color, #ffffff)',
+                        'tg-hint': 'var(--tg-theme-hint-color, #94a3b8)',
+                        'tg-button': 'var(--tg-theme-button-color, #00f0ff)',
+                        'tg-button-text': 'var(--tg-theme-button-text-color, #000000)',
+                        'game-cyan': '#00f0ff',
+                        'game-purple': '#a855f7',
+                        'game-gold': '#eab308',
+                        'game-rose': '#f43f5e',
+                        'game-emerald': '#10b981'
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #07090e);
+            color: var(--tg-theme-text-color, #f1f5f9);
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(19, 24, 34, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(26, 33, 48, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s ease-out;
+        }
+
+        .glass-card:active {
+            transform: scale(0.98);
+        }
+
+        /* Neon Glows */
+        .glow-cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+        .glow-purple { box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
+        .glow-gold { box-shadow: 0 0 15px rgba(234, 179, 8, 0.3); }
+        .glow-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.3); }
+
+        .text-glow-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.7); }
+        .text-glow-gold { text-shadow: 0 0 8px rgba(234, 179, 8, 0.7); }
+        .text-glow-rose { text-shadow: 0 0 8px rgba(244, 63, 94, 0.7); }
+
+        /* Rarity Border Colors */
+        .rarity-common { border-color: #94a3b8; color: #cbd5e1; }
+        .rarity-rare { border-color: #3b82f6; color: #60a5fa; box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+        .rarity-epic { border-color: #a855f7; color: #c084fc; box-shadow: 0 0 12px rgba(168,85,247,0.35); }
+        .rarity-legendary { border-color: #eab308; color: #fde047; box-shadow: 0 0 15px rgba(234,179,8,0.4); }
+
+        /* Floating Damage Text Animation */
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+        }
+
+        .floating-damage {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUpFade 0.85s forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            font-weight: 800;
+            z-index: 100;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Hero Idle Pulse */
+        @keyframes heroPulse {
+            0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 12px rgba(0,240,255,0.25)); }
+            50% { transform: translateY(-5px) scale(1.02); filter: drop-shadow(0 0 20px rgba(0,240,255,0.45)); }
+        }
+        .hero-idle-anim { animation: heroPulse 3.5s infinite ease-in-out; }
+
+        /* Screen Shake */
+        @keyframes hitShake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-6px, 4px); }
+            40% { transform: translate(6px, -4px); }
+            60% { transform: translate(-4px, 2px); }
+            80% { transform: translate(4px, -2px); }
+        }
+        .shake-hit { animation: hitShake 0.25s ease-in-out; }
+
+        /* Screen Flash */
+        @keyframes flashEffect {
+            0% { background-color: rgba(244, 63, 94, 0.3); }
+            100% { background-color: transparent; }
+        }
+        .flash-screen { animation: flashEffect 0.3s ease-out; }
+
+        /* Roulette Animation */
+        @keyframes spinRoulette {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-80%); }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-tg-bg overflow-x-hidden">
+
+    <!-- Canvas for Particle Effects -->
+    <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+    
+    <!-- Flash Damage Overlay -->
+    <div id="flash-overlay" class="fixed inset-0 pointer-events-none z-50"></div>
+
+    <!-- TOP TELEGRAM BAR -->
+    <header class="relative z-10 glass-panel border-b border-slate-800/80 px-3 py-2.5 sticky top-0">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <!-- Telegram User Profile Badge -->
+            <div class="flex items-center space-x-2.5">
+                <div id="user-avatar" class="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md border border-cyan-400/40">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="leading-tight">
+                    <div id="user-name" class="font-bold text-sm text-white truncate max-w-[110px]">Shadow Warrior</div>
+                    <div id="user-tg-tag" class="text-[10px] text-cyan-400 font-semibold tracking-wide">@telegram</div>
+                </div>
+            </div>
+
+            <!-- Currency Counter Header -->
+            <div class="flex items-center space-x-2">
+                <!-- Gold -->
+                <div class="flex items-center space-x-1 bg-slate-900/90 px-2 py-1 rounded-lg border border-amber-500/30">
+                    <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+                    <span id="res-gold" class="text-xs font-bold text-amber-300">0</span>
+                </div>
+                <!-- Gems -->
+                <div class="flex items-center space-x-1 bg-slate-900/90 px-2 py-1 rounded-lg border border-cyan-500/30">
+                    <i class="fa-solid fa-gem text-cyan-400 text-xs"></i>
+                    <span id="res-gems" class="text-xs font-bold text-cyan-300">0</span>
+                </div>
+                <!-- Mute Sound Toggle -->
+                <button onclick="game.toggleSound()" class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME AREA -->
+    <main class="relative z-10 max-w-md mx-auto w-full flex-1 p-3 pb-20 flex flex-col gap-3">
+
+        <!-- TAB 1: BATTLE & ARENA DUNGEON (ACTIVE BY DEFAULT) -->
+        <div id="tab-content-battle" class="flex flex-col gap-3">
+            
+            <!-- Stage Header Banner -->
+            <div class="glass-panel p-2.5 rounded-xl flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">ПОДЗЕМЕЛЬЕ</span>
+                    <h2 id="stage-title" class="title-font text-base font-extrabold text-amber-400 text-glow-gold">ЭТАП 1: ТЕМНЫЙ ЛЕС</h2>
+                </div>
+                <button onclick="game.toggleAutoAttack()" id="btn-auto-battle" class="px-3 py-1.5 rounded-lg bg-purple-600/30 border border-purple-500/50 text-purple-300 text-xs font-bold active:scale-95 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-robot text-purple-400"></i> <span id="auto-btn-txt">АВТО: ВЫКЛ</span>
+                </button>
+            </div>
+
+            <!-- Interactive Battle Viewport Screen -->
+            <div id="battle-viewport" class="glass-panel rounded-2xl p-4 relative overflow-hidden flex flex-col items-center justify-between min-h-[260px] border border-cyan-500/20 shadow-2xl">
+                <!-- Glowing Ambient Background -->
+                <div class="absolute inset-0 bg-gradient-to-b from-purple-900/10 via-transparent to-slate-950 pointer-events-none"></div>
+
+                <!-- Boss Alert Indicator -->
+                <div id="boss-badge" class="hidden absolute top-2 bg-rose-600/80 border border-rose-400 px-3 py-0.5 rounded-full text-[10px] font-black text-white tracking-widest animate-pulse z-20">
+                    ⚠️ БОСС ЭТАПА
+                </div>
+
+                <!-- Active Enemy Graphic Display (TAP TARGET AREA) -->
+                <div id="enemy-tap-zone" onclick="game.handleTapAttack(event)" class="w-full flex-1 flex flex-col items-center justify-center cursor-pointer my-2 relative z-10">
+                    <!-- Enemy SVG Visual Avatar -->
+                    <div id="enemy-avatar" class="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center transition-transform active:scale-90">
+                        <!-- Rendered dynamically -->
+                    </div>
+                    <!-- Enemy HP Bar & Info -->
+                    <div class="w-full max-w-[220px] mt-2">
+                        <div class="flex justify-between text-[11px] font-bold mb-1">
+                            <span id="enemy-name" class="text-rose-400">Темный Гоблин</span>
+                            <span id="enemy-hp-text" class="text-slate-300">100 / 100</span>
+                        </div>
+                        <div class="w-full bg-slate-900/90 rounded-full h-3 border border-slate-700/80 overflow-hidden relative">
+                            <div id="enemy-hp-bar" class="bg-gradient-to-r from-rose-600 to-amber-500 h-full transition-all duration-150" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Player Combat Status Footer -->
+                <div class="w-full flex items-center justify-between border-t border-slate-800/80 pt-2.5 z-10">
+                    <div class="flex items-center space-x-2">
+                        <div id="hero-mini-avatar" class="w-8 h-8 rounded-lg bg-slate-900 border border-cyan-500/40 p-1 flex items-center justify-center">
+                            <!-- Hero SVG -->
+                        </div>
+                        <div>
+                            <span id="hero-mini-name" class="text-xs font-bold text-white block leading-none">Рыцарь Тьмы</span>
+                            <span id="hero-mini-level" class="text-[10px] text-cyan-400 font-semibold">УР. 1</span>
+                        </div>
+                    </div>
+                    <!-- Ultimate Skill Button -->
+                    <button onclick="game.useUltimateSkill()" id="btn-ult-skill" class="py-1.5 px-3 rounded-lg bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-bold text-xs border border-cyan-400/40 active:scale-95 transition-all shadow-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> СУПЕРУДАР
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fast Stat Upgrades Grid in Arena -->
+            <div class="grid grid-cols-2 gap-2" id="arena-quick-upgrades">
+                <!-- Upgrade ATK -->
+                <button onclick="game.upgradeStat('atk')" class="glass-card p-2.5 rounded-xl flex items-center justify-between border border-amber-500/20 active:scale-95">
+                    <div class="text-left">
+                        <span class="text-[10px] text-slate-400 font-bold block">АТАКА</span>
+                        <span id="stat-val-atk" class="text-sm font-extrabold text-amber-300">25</span>
+                    </div>
+                    <div class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-lg text-xs font-bold">
+                        +1 (<span id="stat-cost-atk">15</span> G)
+                    </div>
+                </button>
+                <!-- Upgrade HP -->
+                <button onclick="game.upgradeStat('hp')" class="glass-card p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/20 active:scale-95">
+                    <div class="text-left">
+                        <span class="text-[10px] text-slate-400 font-bold block">ЗДОРОВЬЕ</span>
+                        <span id="stat-val-hp" class="text-sm font-extrabold text-emerald-300">180</span>
+                    </div>
+                    <div class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-1 rounded-lg text-xs font-bold">
+                        +10 (<span id="stat-cost-hp">15</span> G)
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 2: HERO & CLASSES -->
+        <div id="tab-content-hero" class="flex flex-col gap-3 hidden">
+            <!-- Hero Class Selector Carousel -->
+            <div class="glass-panel p-3 rounded-xl">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center justify-between">
+                    <span><i class="fa-solid fa-users text-cyan-400 mr-1.5"></i>ВЫБОР КЛАССА</span>
+                    <span id="hero-class-tag" class="text-cyan-400">1/3 Доступно</span>
+                </h3>
+                <div class="grid grid-cols-3 gap-2" id="hero-selector-list">
+                    <!-- Dynamic Hero Class Buttons -->
+                </div>
+            </div>
+
+            <!-- Active Hero Card -->
+            <div class="glass-panel p-4 rounded-xl flex flex-col items-center border border-cyan-500/20 relative overflow-hidden">
+                <div class="w-full flex items-center justify-between mb-2">
+                    <span id="hero-rank-badge" class="px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold rounded">
+                        РАНГ I - БРОНЗА
+                    </span>
+                    <span id="hero-role-title" class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        РЫЦАРЬ ТЬМЫ
+                    </span>
+                </div>
+
+                <!-- Avatar Hero Big -->
+                <div class="w-36 h-36 my-2 flex items-center justify-center hero-idle-anim" id="hero-big-avatar">
+                    <!-- SVG -->
+                </div>
+
+                <h3 id="hero-full-name" class="title-font text-lg font-bold text-white">Рыцарь Ваэлен</h3>
+                <p id="hero-lvl-badge" class="text-xs text-cyan-400 font-bold mb-2">УРОВЕНЬ 1</p>
+
+                <!-- EXP Bar -->
+                <div class="w-full bg-slate-900 rounded-full h-2.5 border border-slate-700/80 overflow-hidden relative mb-3">
+                    <div id="hero-exp-bar" class="bg-gradient-to-r from-cyan-500 to-purple-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Hero Attributes List -->
+                <div class="w-full grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800 flex justify-between">
+                        <span class="text-slate-400">Атака (ATK):</span>
+                        <span id="attr-atk" class="font-bold text-amber-400">25</span>
+                    </div>
+                    <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800 flex justify-between">
+                        <span class="text-slate-400">Здоровье (HP):</span>
+                        <span id="attr-hp" class="font-bold text-emerald-400">180</span>
+                    </div>
+                    <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800 flex justify-between">
+                        <span class="text-slate-400">Защита (DEF):</span>
+                        <span id="attr-def" class="font-bold text-blue-400">10</span>
+                    </div>
+                    <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800 flex justify-between">
+                        <span class="text-slate-400">Крит (%)</span>
+                        <span id="attr-crit" class="font-bold text-purple-400">5%</span>
+                    </div>
+                </div>
+
+                <!-- Hero Action Training Button -->
+                <button onclick="game.trainHero()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-xs border border-cyan-400/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-dumbbell text-cyan-300"></i> ТРЕНИРОВАТЬ ПЕРСОНАЖА (+EXP)
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 3: INVENTORY & CHESTS (LOOT) -->
+        <div id="tab-content-loot" class="flex flex-col gap-3 hidden">
+            <!-- Chest Open Banner -->
+            <div class="glass-panel p-3.5 rounded-xl text-center flex flex-col items-center">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-purple-600/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-3xl mb-2 glow-gold">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h3 class="title-font text-base font-bold text-white">СУНДУК СОКРОВИЩ</h3>
+                <p class="text-xs text-slate-400 mb-3">Открывай сундуки для получения редкого снаряжения</p>
+                <button onclick="game.openChest()" class="py-2.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold text-xs shadow-lg active:scale-95 transition-all">
+                    ОТКРЫТЬ СУНДУК (100 G)
+                </button>
+            </div>
+
+            <!-- Equipped Gear Slots -->
+            <div class="glass-panel p-3 rounded-xl">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">ЭКИПИРОВАНО</h4>
+                <div class="grid grid-cols-2 gap-2" id="equipped-gear-container">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Inventory List -->
+            <div class="glass-panel p-3 rounded-xl">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">ИНВЕНТАРЬ (ИНВЕНТАРЬ ШМОТА)</h4>
+                <div class="grid grid-cols-2 gap-2" id="inventory-container">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: SKILL TREE -->
+        <div id="tab-content-skills" class="flex flex-col gap-3 hidden">
+            <div class="glass-panel p-3 rounded-xl flex justify-between items-center">
+                <div>
+                    <h3 class="title-font text-sm font-bold text-white">ДРЕВО НАВЫКОВ</h3>
+                    <p class="text-[11px] text-slate-400">Прокачивай умения за Очки Навыков</p>
+                </div>
+                <div class="bg-purple-900/40 border border-purple-500/40 px-2.5 py-1 rounded-lg text-xs font-bold text-purple-300">
+                    ОЧКИ: <span id="skill-points-val">0</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2" id="skills-tree-list">
+                <!-- Rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB 5: TELEGRAM SOCIAL & PROFILE -->
+        <div id="tab-content-social" class="flex flex-col gap-3 hidden">
+            <!-- Profile Info Banner -->
+            <div class="glass-panel p-4 rounded-xl text-center flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-cyan-400/50 mb-2">
+                    <i class="fa-solid fa-crown text-amber-300"></i>
+                </div>
+                <h3 id="profile-tg-name" class="title-font text-base font-bold text-white">Телеграм Герой</h3>
+                <p id="profile-tg-username" class="text-xs text-cyan-400 mb-3">@username</p>
+
+                <!-- Share to Telegram Button -->
+                <button onclick="game.shareToTelegram()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-2 border border-cyan-400/30">
+                    <i class="fa-solid fa-paper-plane"></i> ПОДЕЛИТЬСЯ В ТЕЛЕГРАМ
+                </button>
+            </div>
+
+            <!-- Stats & Progress Summary -->
+            <div class="glass-panel p-3 rounded-xl space-y-2">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">СТАТИСТИКА ИГРОКА</h4>
+                <div class="flex justify-between text-xs py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Пройдено этапов:</span>
+                    <span id="stats-stages-cleared" class="font-bold text-amber-300">1</span>
+                </div>
+                <div class="flex justify-between text-xs py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Убито монстров:</span>
+                    <span id="stats-monsters-killed" class="font-bold text-rose-400">0</span>
+                </div>
+                <div class="flex justify-between text-xs py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Боевая Мощь (CP):</span>
+                    <span id="stats-total-power" class="font-bold text-cyan-300">150</span>
+                </div>
+            </div>
+
+            <!-- Reset Progress -->
+            <button onclick="game.resetData()" class="w-full py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all">
+                СБРОСИТЬ ПРОГРЕСС
+            </button>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION TABS -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/80 px-2 py-1.5">
+        <div class="max-w-md mx-auto flex items-center justify-around">
+            <button id="nav-btn-battle" onclick="game.switchTab('battle')" class="flex flex-col items-center py-1 px-3 rounded-xl text-cyan-400 font-bold transition-all">
+                <i class="fa-solid fa-khanda text-base"></i>
+                <span class="text-[10px] mt-0.5">Арена</span>
+            </button>
+            <button id="nav-btn-hero" onclick="game.switchTab('hero')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-400 font-bold transition-all">
+                <i class="fa-solid fa-user-shield text-base"></i>
+                <span class="text-[10px] mt-0.5">Герой</span>
+            </button>
+            <button id="nav-btn-loot" onclick="game.switchTab('loot')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-400 font-bold transition-all">
+                <i class="fa-solid fa-box-open text-base"></i>
+                <span class="text-[10px] mt-0.5">Сундуки</span>
+            </button>
+            <button id="nav-btn-skills" onclick="game.switchTab('skills')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-400 font-bold transition-all">
+                <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                <span class="text-[10px] mt-0.5">Навыки</span>
+            </button>
+            <button id="nav-btn-social" onclick="game.switchTab('social')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-400 font-bold transition-all">
+                <i class="fa-solid fa-id-card text-base"></i>
+                <span class="text-[10px] mt-0.5">Профиль</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        /* ==========================================================================
+           AUDIO SYNTHESIZER ENGINE (Web Audio API)
+           ========================================================================== */
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playTap() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.04);
+            }
+
+            playCritHit() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playLevelUp() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [440, 554, 659, 880].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                    gain.gain.setValueAtTime(0.15, now + i * 0.06);
+                    gain.gain.linearRampToValueAtTime(0, now + i * 0.06 + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.1);
+                });
+            }
+
+            playChestOpen() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [300, 400, 500, 700, 900].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.05);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.05);
+                    gain.gain.linearRampToValueAtTime(0, now + i * 0.05 + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.05);
+                    osc.stop(now + i * 0.05 + 0.1);
+                });
+            }
+        }
+
+        const sound = new AudioEngine();
+    </script>
+
+    <script>
+        /* ==========================================================================
+           PARTICLE BACKGROUND ENGINE
+           ========================================================================== */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedY = Math.random() * -0.6 - 0.2;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = Math.random() > 0.5 ? '#00f0ff' : '#a855f7';
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                if (this.y < 0) { this.reset(); this.y = canvas.height; }
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        for (let i = 0; i < 40; i++) particles.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+    </script>
+
+    <script>
+        /* ==========================================================================
+           TELEGRAM WEBAPP SDK INITIALIZATION & HAPTIC FEEDBACK
+           ========================================================================== */
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            // Match Telegram WebApp Theme colors
+            if (tg.setHeaderColor) tg.setHeaderColor('#0b0e14');
+            if (tg.setBackgroundColor) tg.setBackgroundColor('#07090e');
+        }
+
+        function triggerHaptic(type = 'light') {
+            if (tg && tg.HapticFeedback) {
+                if (type === 'light') tg.HapticFeedback.impactOccurred('light');
+                else if (type === 'medium') tg.HapticFeedback.impactOccurred('medium');
+                else if (type === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
+                else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+                else if (type === 'warning') tg.HapticFeedback.notificationOccurred('warning');
+            }
+        }
+
+        /* ==========================================================================
+           GAME DATA DEFINITIONS
+           ========================================================================== */
+        const CLASSES = {
+            knight: {
+                id: 'knight',
+                name: 'Рыцарь Тьмы',
+                role: 'Танк / Атака',
+                unlocked: true,
+                unlockCost: 0,
+                baseAtk: 25,
+                baseHp: 180,
+                baseDef: 12,
+                critChance: 5,
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_12px_rgba(0,240,255,0.6)]">
+                    <polygon points="50,10 85,35 75,85 25,85 15,35" fill="none" stroke="#00f0ff" stroke-width="3"/>
+                    <path d="M50 20 L70 40 L50 80 L30 40 Z" fill="#00f0ff" opacity="0.3"/>
+                    <circle cx="50" cy="45" r="10" fill="#a855f7"/>
+                </svg>`
+            },
+            mage: {
+                id: 'mage',
+                name: 'Ледяной Маг',
+                role: 'Магия / Крит',
+                unlocked: false,
+                unlockCost: 300,
+                baseAtk: 40,
+                baseHp: 130,
+                baseDef: 6,
+                critChance: 12,
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]">
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="#a855f7" stroke-width="3"/>
+                    <polygon points="50,15 62,38 85,50 62,62 50,85 38,62 15,50 38,38" fill="#a855f7" opacity="0.4"/>
+                </svg>`
+            },
+            assassin: {
+                id: 'assassin',
+                name: 'Теневой Убийца',
+                role: 'Скорость / Крит',
+                unlocked: false,
+                unlockCost: 800,
+                baseAtk: 35,
+                baseHp: 150,
+                baseDef: 8,
+                critChance: 20,
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_12px_rgba(234,179,8,0.6)]">
+                    <rect x="25" y="25" width="50" height="50" fill="none" stroke="#eab308" stroke-width="3" transform="rotate(45 50 50)"/>
+                    <circle cx="50" cy="50" r="14" fill="#f43f5e"/>
+                </svg>`
+            }
+        };
+
+        const ENEMIES_DATA = [
+            { name: 'Гоблин Тьмы', hp: 80, atk: 8, gold: 15, exp: 20, svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="50,15 80,85 20,85" fill="#f43f5e" opacity="0.8"/></svg>` },
+            { name: 'Лесной Леший', hp: 160, atk: 15, gold: 30, exp: 40, svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="35" fill="#a855f7" opacity="0.8"/></svg>` },
+            { name: 'Огр Подземелья', hp: 300, atk: 25, gold: 60, exp: 80, svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="20" y="20" width="60" height="60" fill="#eab308" opacity="0.8"/></svg>` },
+            { name: 'Древний Дракон (БОСС)', hp: 800, atk: 50, gold: 200, exp: 250, svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="50,10 90,90 10,90" fill="#10b981"/></svg>` }
+        ];
+
+        /* ==========================================================================
+           MAIN TMA GAME APP ENGINE
+           ========================================================================== */
+        class TelegramMiniAppGame {
+            constructor() {
+                // User & Currencies
+                this.gold = 100;
+                this.gems = 10;
+                this.skillPoints = 1;
+                this.stage = 1;
+                this.monstersKilled = 0;
+
+                // Hero State
+                this.activeHeroId = 'knight';
+                this.heroLvl = 1;
+                this.heroExp = 0;
+                this.heroMaxExp = 100;
+
+                // Stats Upgrades
+                this.statUpgrades = {
+                    atk: 0,
+                    hp: 0
+                };
+
+                // Gear & Equipment
+                this.inventory = [];
+                this.equipped = {
+                    weapon: null,
+                    armor: null
+                };
+
+                // Skill Tree
+                this.skills = [
+                    { id: 'sk1', name: 'Удар Тьмы', desc: '+15% Атаки', learned: false },
+                    { id: 'sk2', name: 'Щит Бездны', desc: '+25% Здоровья', learned: false },
+                    { id: 'sk3', name: 'Смертельный Крит', desc: '+10% Крит Урона', learned: false }
+                ];
+
+                // Enemy State
+                this.currentEnemy = null;
+                this.autoAttack = false;
+                this.autoInterval = null;
+
+                this.init();
+            }
+
+            init() {
+                this.loadUserData();
+                this.setupTelegramProfile();
+                this.spawnEnemy();
+                this.updateUI();
+            }
+
+            setupTelegramProfile() {
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const user = tg.initDataUnsafe.user;
+                    document.getElementById('user-name').innerText = user.first_name || 'Герой';
+                    document.getElementById('user-tg-tag').innerText = user.username ? `@${user.username}` : '@telegram';
+                    document.getElementById('profile-tg-name').innerText = `${user.first_name || 'Герой'} ${user.last_name || ''}`;
+                    document.getElementById('profile-tg-username').innerText = user.username ? `@${user.username}` : '@telegram';
+                }
+            }
+
+            switchTab(tabName) {
+                sound.playTap();
+                triggerHaptic('light');
+
+                const tabs = ['battle', 'hero', 'loot', 'skills', 'social'];
+                tabs.forEach(t => {
+                    const content = document.getElementById(`tab-content-${t}`);
+                    const btn = document.getElementById(`nav-btn-${t}`);
+
+                    if (t === tabName) {
+                        content.classList.remove('hidden');
+                        btn.className = "flex flex-col items-center py-1 px-3 rounded-xl text-cyan-400 font-bold transition-all";
+                    } else {
+                        content.classList.add('hidden');
+                        btn.className = "flex flex-col items-center py-1 px-3 rounded-xl text-slate-400 font-bold transition-all";
+                    }
+                });
+            }
+
+            toggleSound() {
+                sound.enabled = !sound.enabled;
+                const icon = document.getElementById('sound-icon');
+                if (sound.enabled) {
+                    icon.className = 'fa-solid fa-volume-high text-xs text-cyan-400';
+                    sound.playTap();
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark text-xs text-slate-500';
+                }
+            }
+
+            getActiveHero() {
+                return CLASSES[this.activeHeroId];
+            }
+
+            getTotalAtk() {
+                const base = this.getActiveHero().baseAtk + (this.statUpgrades.atk * 3);
+                let equipBonus = 0;
+                if (this.equipped.weapon) equipBonus += this.equipped.weapon.atk;
+                let skillBonus = this.skills[0].learned ? base * 0.15 : 0;
+                return Math.round(base + equipBonus + skillBonus);
+            }
+
+            getTotalHp() {
+                const base = this.getActiveHero().baseHp + (this.statUpgrades.hp * 15);
+                let equipBonus = 0;
+                if (this.equipped.armor) equipBonus += this.equipped.armor.hp;
+                let skillBonus = this.skills[1].learned ? base * 0.25 : 0;
+                return Math.round(base + equipBonus + skillBonus);
+            }
+
+            spawnEnemy() {
+                const isBoss = this.stage % 5 === 0;
+                const baseEnemy = isBoss ? ENEMIES_DATA[3] : ENEMIES_DATA[(this.stage - 1) % 3];
+                const scale = Math.pow(1.25, Math.floor(this.stage / 2));
+
+                this.currentEnemy = {
+                    name: isBoss ? `${baseEnemy.name} (ЭТАП ${this.stage})` : baseEnemy.name,
+                    hp: Math.round(baseEnemy.hp * scale),
+                    maxHp: Math.round(baseEnemy.hp * scale),
+                    atk: Math.round(baseEnemy.atk * scale),
+                    gold: Math.round(baseEnemy.gold * scale),
+                    exp: Math.round(baseEnemy.exp * scale),
+                    svg: baseEnemy.svg,
+                    isBoss: isBoss
+                };
+
+                document.getElementById('enemy-avatar').innerHTML = this.currentEnemy.svg;
+                document.getElementById('enemy-name').innerText = this.currentEnemy.name;
+                document.getElementById('stage-title').innerText = `ЭТАП ${this.stage}: ПОДЗЕМЕЛЬЕ`;
+
+                const bossBadge = document.getElementById('boss-badge');
+                if (isBoss) bossBadge.classList.remove('hidden');
+                else bossBadge.classList.add('hidden');
+
+                this.updateEnemyHpUI();
+            }
+
+            updateEnemyHpUI() {
+                const pct = Math.max(0, (this.currentEnemy.hp / this.currentEnemy.maxHp) * 100);
+                document.getElementById('enemy-hp-bar').style.width = `${pct}%`;
+                document.getElementById('enemy-hp-text').innerText = `${Math.max(0, this.currentEnemy.hp)} / ${this.currentEnemy.maxHp}`;
+            }
+
+            handleTapAttack(event) {
+                sound.playTap();
+                triggerHaptic('light');
+
+                const totalAtk = this.getTotalAtk();
+                const isCrit = Math.random() * 100 < (this.getActiveHero().critChance + (this.skills[2].learned ? 10 : 0));
+                let dmg = isCrit ? Math.round(totalAtk * 1.8) : totalAtk;
+
+                if (isCrit) {
+                    sound.playCritHit();
+                    triggerHaptic('heavy');
+                }
+
+                this.currentEnemy.hp -= dmg;
+
+                // Visual animation
+                const enemyAv = document.getElementById('enemy-avatar');
+                enemyAv.classList.add('shake-hit');
+                setTimeout(() => enemyAv.classList.remove('shake-hit'), 200);
+
+                // Spawn floating damage text
+                const rect = enemyAv.getBoundingClientRect();
+                this.spawnFloatingDamage(`-${dmg}${isCrit ? ' КРИТ!' : ''}`, isCrit ? 'text-amber-400 text-glow-gold text-lg' : 'text-rose-400', rect.left + 20, rect.top + 20);
+
+                if (this.currentEnemy.hp <= 0) {
+                    this.onEnemyDefeated();
+                }
+
+                this.updateEnemyHpUI();
+            }
+
+            useUltimateSkill() {
+                sound.playCritHit();
+                triggerHaptic('heavy');
+
+                const dmg = Math.round(this.getTotalAtk() * 3.5);
+                this.currentEnemy.hp -= dmg;
+
+                const enemyAv = document.getElementById('enemy-avatar');
+                const rect = enemyAv.getBoundingClientRect();
+                this.spawnFloatingDamage(`💥 ${dmg}!`, 'text-cyan-300 text-glow-cyan text-xl', rect.left + 10, rect.top);
+
+                if (this.currentEnemy.hp <= 0) {
+                    this.onEnemyDefeated();
+                }
+
+                this.updateEnemyHpUI();
+            }
+
+            onEnemyDefeated() {
+                sound.playLevelUp();
+                triggerHaptic('success');
+
+                this.gold += this.currentEnemy.gold;
+                this.heroExp += this.currentEnemy.exp;
+                this.monstersKilled++;
+
+                if (this.currentEnemy.isBoss) {
+                    this.gems += 5;
+                }
+
+                if (this.heroExp >= this.heroMaxExp) {
+                    this.heroExp -= this.heroMaxExp;
+                    this.heroLvl++;
+                    this.heroMaxExp = Math.round(this.heroMaxExp * 1.4);
+                    this.skillPoints++;
+                }
+
+                this.stage++;
+                this.saveUserData();
+                this.updateUI();
+                this.spawnEnemy();
+            }
+
+            toggleAutoAttack() {
+                sound.playTap();
+                this.autoAttack = !this.autoAttack;
+                const txt = document.getElementById('auto-btn-txt');
+
+                if (this.autoAttack) {
+                    txt.innerText = 'АВТО: ВКЛ';
+                    this.autoInterval = setInterval(() => this.handleTapAttack(null), 800);
+                } else {
+                    txt.innerText = 'АВТО: ВЫКЛ';
+                    clearInterval(this.autoInterval);
+                }
+            }
+
+            upgradeStat(statKey) {
+                const cost = (this.statUpgrades[statKey] + 1) * 15;
+                if (this.gold >= cost) {
+                    sound.playLevelUp();
+                    triggerHaptic('medium');
+                    this.gold -= cost;
+                    this.statUpgrades[statKey]++;
+                    this.saveUserData();
+                    this.updateUI();
+                } else {
+                    triggerHaptic('warning');
+                }
+            }
+
+            trainHero() {
+                sound.playTap();
+                triggerHaptic('light');
+
+                this.heroExp += 25;
+                this.gold += 10;
+
+                if (this.heroExp >= this.heroMaxExp) {
+                    this.heroExp -= this.heroMaxExp;
+                    this.heroLvl++;
+                    this.heroMaxExp = Math.round(this.heroMaxExp * 1.4);
+                    this.skillPoints++;
+                    sound.playLevelUp();
+                }
+
+                this.saveUserData();
+                this.updateUI();
+            }
+
+            openChest() {
+                if (this.gold >= 100) {
+                    this.gold -= 100;
+                    sound.playChestOpen();
+                    triggerHaptic('heavy');
+
+                    const rarities = ['common', 'rare', 'epic', 'legendary'];
+                    const rand = Math.random();
+                    let rarity = 'common';
+                    if (rand > 0.9) rarity = 'legendary';
+                    else if (rand > 0.7) rarity = 'epic';
+                    else if (rand > 0.4) rarity = 'rare';
+
+                    const isWeapon = Math.random() > 0.5;
+                    const item = {
+                        id: 'item_' + Date.now(),
+                        name: isWeapon ? `${rarity.toUpperCase()} МЕЧ` : `${rarity.toUpperCase()} БРОНЯ`,
+                        type: isWeapon ? 'weapon' : 'armor',
+                        rarity: rarity,
+                        atk: isWeapon ? (rarity === 'legendary' ? 40 : rarity === 'epic' ? 25 : rarity === 'rare' ? 15 : 8) : 0,
+                        hp: !isWeapon ? (rarity === 'legendary' ? 200 : rarity === 'epic' ? 120 : rarity === 'rare' ? 70 : 30) : 0
+                    };
+
+                    this.inventory.push(item);
+                    this.saveUserData();
+                    this.updateUI();
+                    this.renderLootTab();
+                } else {
+                    triggerHaptic('warning');
+                    alert('Недостаточно золота для сундука!');
+                }
+            }
+
+            equipItem(itemId) {
+                sound.playTap();
+                const item = this.inventory.find(i => i.id === itemId);
+                if (item) {
+                    this.equipped[item.type] = item;
+                    this.saveUserData();
+                    this.updateUI();
+                    this.renderLootTab();
+                }
+            }
+
+            renderLootTab() {
+                const invCont = document.getElementById('inventory-container');
+                const eqCont = document.getElementById('equipped-gear-container');
+                invCont.innerHTML = '';
+                eqCont.innerHTML = '';
+
+                // Render Equipped
+                ['weapon', 'armor'].forEach(slot => {
+                    const item = this.equipped[slot];
+                    const div = document.createElement('div');
+                    if (item) {
+                        div.className = `glass-card p-2 rounded-lg border rarity-${item.rarity} flex flex-col justify-between text-xs`;
+                        div.innerHTML = `
+                            <div>
+                                <span class="font-bold block">${item.name}</span>
+                                <span class="text-[10px] opacity-80">${item.atk ? `+${item.atk} ATK` : `+${item.hp} HP`}</span>
+                            </div>
+                            <span class="text-[9px] text-emerald-400 font-bold mt-1">НАДЕТО</span>
+                        `;
+                    } else {
+                        div.className = "glass-card p-2 rounded-lg border border-slate-800 text-xs text-slate-500 text-center";
+                        div.innerHTML = `ПУСТО (${slot.toUpperCase()})`;
+                    }
+                    eqCont.appendChild(div);
+                });
+
+                // Render Inventory
+                this.inventory.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = `glass-card p-2 rounded-lg border rarity-${item.rarity} flex flex-col justify-between text-xs`;
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold block truncate">${item.name}</span>
+                            <span class="text-[10px] opacity-80">${item.atk ? `+${item.atk} ATK` : `+${item.hp} HP`}</span>
+                        </div>
+                        <button onclick="game.equipItem('${item.id}')" class="mt-1.5 py-1 px-2 rounded bg-cyan-500/20 text-cyan-300 font-bold text-[10px] border border-cyan-500/40 active:scale-95">
+                            НАДЕТЬ
+                        </button>
+                    `;
+                    invCont.appendChild(div);
+                });
+            }
+
+            renderSkillsTab() {
+                const cont = document.getElementById('skills-tree-list');
+                cont.innerHTML = '';
+                document.getElementById('skill-points-val').innerText = this.skillPoints;
+
+                this.skills.forEach((sk, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "glass-card p-3 rounded-xl flex items-center justify-between";
+                    card.innerHTML = `
+                        <div>
+                            <h4 class="font-bold text-white text-xs">${sk.name}</h4>
+                            <p class="text-[11px] text-slate-400">${sk.desc}</p>
+                        </div>
+                        ${sk.learned 
+                            ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40">ИЗУЧЕНО</span>'
+                            : `<button onclick="game.learnSkill(${idx})" class="py-1 px-2.5 rounded bg-purple-600/30 text-purple-300 font-bold text-xs border border-purple-500/50">ИЗУЧИТЬ (1 SP)</button>`
+                        }
+                    `;
+                    cont.appendChild(card);
+                });
+            }
+
+            learnSkill(idx) {
+                if (this.skillPoints > 0 && !this.skills[idx].learned) {
+                    sound.playLevelUp();
+                    this.skillPoints--;
+                    this.skills[idx].learned = true;
+                    this.saveUserData();
+                    this.updateUI();
+                    this.renderSkillsTab();
+                }
+            }
+
+            renderHeroSelector() {
+                const cont = document.getElementById('hero-selector-list');
+                cont.innerHTML = '';
+
+                Object.keys(CLASSES).forEach(key => {
+                    const c = CLASSES[key];
+                    const isSelected = key === this.activeHeroId;
+                    const btn = document.createElement('button');
+
+                    btn.className = `p-2 rounded-lg border flex flex-col items-center justify-center text-xs ${
+                        isSelected 
+                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' 
+                        : 'bg-slate-800/50 border-slate-700 text-slate-400'
+                    }`;
+                    btn.onclick = () => {
+                        this.activeHeroId = key;
+                        this.updateUI();
+                        this.renderHeroSelector();
+                    };
+                    btn.innerHTML = `
+                        <div class="w-7 h-7">${c.svg}</div>
+                        <span class="text-[9px] font-bold mt-1 truncate">${c.name}</span>
+                    `;
+                    cont.appendChild(btn);
+                });
+            }
+
+            updateUI() {
+                // Header Currencies
+                document.getElementById('res-gold').innerText = this.gold.toLocaleString();
+                document.getElementById('res-gems').innerText = this.gems.toLocaleString();
+
+                // Quick Upgrade Stats
+                document.getElementById('stat-val-atk').innerText = this.getTotalAtk();
+                document.getElementById('stat-cost-atk').innerText = (this.statUpgrades.atk + 1) * 15;
+
+                document.getElementById('stat-val-hp').innerText = this.getTotalHp();
+                document.getElementById('stat-cost-hp').innerText = (this.statUpgrades.hp + 1) * 15;
+
+                // Hero Details
+                const activeH = this.getActiveHero();
+                document.getElementById('hero-mini-avatar').innerHTML = activeH.svg;
+                document.getElementById('hero-big-avatar').innerHTML = activeH.svg;
+                document.getElementById('hero-mini-name').innerText = activeH.name;
+                document.getElementById('hero-full-name').innerText = activeH.name;
+                document.getElementById('hero-mini-level').innerText = `УР. ${this.heroLvl}`;
+                document.getElementById('hero-lvl-badge').innerText = `УРОВЕНЬ ${this.heroLvl}`;
+
+                const expPct = Math.min(100, (this.heroExp / this.heroMaxExp) * 100);
+                document.getElementById('hero-exp-bar').style.width = `${expPct}%`;
+
+                document.getElementById('attr-atk').innerText = this.getTotalAtk();
+                document.getElementById('attr-hp').innerText = this.getTotalHp();
+
+                // Social / Profile Stats
+                document.getElementById('stats-stages-cleared').innerText = this.stage;
+                document.getElementById('stats-monsters-killed').innerText = this.monstersKilled;
+                document.getElementById('stats-total-power').innerText = Math.round(this.getTotalAtk() * 3 + this.getTotalHp());
+
+                this.renderLootTab();
+                this.renderSkillsTab();
+                this.renderHeroSelector();
+            }
+
+            spawnFloatingDamage(text, colorClass, x, y) {
+                const el = document.createElement('div');
+                el.className = `floating-damage ${colorClass}`;
+                el.innerText = text;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 850);
+            }
+
+            shareToTelegram() {
+                sound.playTap();
+                const shareText = `⚔️ Мой герой в Shadow Ascension TMA достигнул ${this.heroLvl} уровня на этаже ${this.stage}! Сыграй со мной!`;
+                const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/your_bot_username')}&text=${encodeURIComponent(shareText)}`;
+                
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(url);
+                } else {
+                    window.open(url, '_blank');
+                }
+            }
+
+            saveUserData() {
+                const data = {
+                    gold: this.gold,
+                    gems: this.gems,
+                    stage: this.stage,
+                    heroLvl: this.heroLvl,
+                    heroExp: this.heroExp,
+                    statUpgrades: this.statUpgrades,
+                    inventory: this.inventory,
+                    equipped: this.equipped,
+                    skills: this.skills,
+                    skillPoints: this.skillPoints
+                };
+                localStorage.setItem('tma_rpg_save', JSON.stringify(data));
+            }
+
+            loadUserData() {
+                const saved = localStorage.getItem('tma_rpg_save');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        this.gold = parsed.gold || 100;
+                        this.gems = parsed.gems || 10;
+                        this.stage = parsed.stage || 1;
+                        this.heroLvl = parsed.heroLvl || 1;
+                        this.heroExp = parsed.heroExp || 0;
+                        this.statUpgrades = parsed.statUpgrades || { atk: 0, hp: 0 };
+                        this.inventory = parsed.inventory || [];
+                        this.equipped = parsed.equipped || { weapon: null, armor: null };
+                        this.skills = parsed.skills || this.skills;
+                        this.skillPoints = parsed.skillPoints || 1;
+                    } catch (e) { console.error(e); }
+                }
+            }
+
+            resetData() {
+                if (confirm('Сбросить весь сохраненный прогресс?')) {
+                    localStorage.removeItem('tma_rpg_save');
+                    location.reload();
+                }
+            }
+        }
+
+        let game = null;
+        window.onload = function() {
+            game = new TelegramMiniAppGame();
+        };
+    </script>
+</body>
+</html>
